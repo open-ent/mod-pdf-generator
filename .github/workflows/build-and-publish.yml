@@ -2,7 +2,7 @@ name: Build & Publish Fat Mod
 
 on:
   push:
-    branches: [main, master, develop]
+    branches: [main, master, develop, "*-patched", "*-patched-dev"]
     tags: ['*']
   pull_request:
     branches: [main, master, develop]
@@ -21,9 +21,44 @@ jobs:
 
       - uses: actions/setup-java@v4
         with:
-          java-version: '11'
+          java-version: '8'
           distribution: temurin
           cache: maven
+
+      - name: Configure Maven
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml << EOF
+          <settings>
+            <servers>
+              <server>
+                <id>github</id>
+                <username>$GITHUB_ACTOR</username>
+                <password>$GITHUB_TOKEN</password>
+              </server>
+            </servers>
+            <profiles>
+              <profile>
+                <id>ode-nexus</id>
+                <repositories>
+                  <repository>
+                    <id>ode</id>
+                    <name>ODE Repository</name>
+                    <url>https://maven.opendigitaleducation.com/nexus/content/groups/public</url>
+                    <releases><enabled>true</enabled></releases>
+                    <snapshots><enabled>true</enabled></snapshots>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>ode-nexus</activeProfile>
+            </activeProfiles>
+          </settings>
+          EOF
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
 
       - name: Build fat JAR
         run: mvn clean package -DskipTests -B
