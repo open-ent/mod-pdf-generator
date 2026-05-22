@@ -49,15 +49,8 @@ jobs:
             </servers>
             <profiles>
               <profile>
-                <id>all-repos</id>
+                <id>github-packages</id>
                 <repositories>
-                  <repository>
-                    <id>ode</id>
-                    <name>ODE Repository</name>
-                    <url>https://maven.opendigitaleducation.com/nexus/content/groups/public</url>
-                    <releases><enabled>true</enabled></releases>
-                    <snapshots><enabled>true</enabled></snapshots>
-                  </repository>
                   <repository>
                     <id>github-oe-ng</id>
                     <name>GitHub open-ent-ng Packages</name>
@@ -76,7 +69,7 @@ jobs:
               </profile>
             </profiles>
             <activeProfiles>
-              <activeProfile>all-repos</activeProfile>
+              <activeProfile>github-packages</activeProfile>
             </activeProfiles>
           </settings>
           EOF
