@@ -7,6 +7,11 @@ on:
   pull_request:
     branches: [main, master, develop]
   workflow_dispatch:
+    inputs:
+      entcore_version:
+        description: 'Version entcore (ex: 6.14.9-patched). Laissez vide pour utiliser la version du pom.xml.'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -36,10 +41,15 @@ jobs:
                 <username>$GITHUB_ACTOR</username>
                 <password>$GITHUB_TOKEN</password>
               </server>
+              <server>
+                <id>github-oe-ng</id>
+                <username>$GITHUB_ACTOR</username>
+                <password>$GITHUB_TOKEN</password>
+              </server>
             </servers>
             <profiles>
               <profile>
-                <id>ode-nexus</id>
+                <id>all-repos</id>
                 <repositories>
                   <repository>
                     <id>ode</id>
@@ -48,11 +58,25 @@ jobs:
                     <releases><enabled>true</enabled></releases>
                     <snapshots><enabled>true</enabled></snapshots>
                   </repository>
+                  <repository>
+                    <id>github-oe-ng</id>
+                    <name>GitHub open-ent-ng Packages</name>
+                    <url>https://maven.pkg.github.com/open-ent/open-ent-ng</url>
+                    <releases><enabled>true</enabled></releases>
+                    <snapshots><enabled>true</enabled></snapshots>
+                  </repository>
+                  <repository>
+                    <id>github</id>
+                    <name>GitHub open-ent Packages</name>
+                    <url>https://maven.pkg.github.com/open-ent/entcore-v2</url>
+                    <releases><enabled>true</enabled></releases>
+                    <snapshots><enabled>true</enabled></snapshots>
+                  </repository>
                 </repositories>
               </profile>
             </profiles>
             <activeProfiles>
-              <activeProfile>ode-nexus</activeProfile>
+              <activeProfile>all-repos</activeProfile>
             </activeProfiles>
           </settings>
           EOF
@@ -61,7 +85,12 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
 
       - name: Build fat JAR
-        run: mvn clean package -DskipTests -B
+        run: |
+          ENTCORE_OPT=""
+          if [ -n "$ENTCORE_VERSION" ]; then ENTCORE_OPT="-DentCoreVersion=$ENTCORE_VERSION"; fi
+          mvn clean package -DskipTests -B $ENTCORE_OPT
+        env:
+          ENTCORE_VERSION: ${{ github.event.inputs.entcore_version }}
 
       - name: Run tests
         if: github.event_name == 'pull_request'
