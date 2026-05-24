@@ -44,7 +44,7 @@ jobs:
               <server>
                 <id>github-oe-ng</id>
                 <username>$GITHUB_ACTOR</username>
-                <password>$GITHUB_TOKEN</password>
+                <password>$GH_PACKAGES_TOKEN</password>
               </server>
             </servers>
             <profiles>
@@ -76,6 +76,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
+          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
 
       - name: Build fat JAR
         run: |
