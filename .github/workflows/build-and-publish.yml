@@ -85,6 +85,7 @@ jobs:
           mvn clean package -DskipTests -B $ENTCORE_OPT
         env:
           ENTCORE_VERSION: ${{ github.event.inputs.entcore_version }}
+          PROFILE: shade
 
       - name: Run tests
         if: github.event_name == 'pull_request'
