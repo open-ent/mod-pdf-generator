@@ -106,7 +106,7 @@ jobs:
             ls -la target/*.jar 2>/dev/null || echo "No JARs found in target/"
             exit 1
           fi
-          mvn deploy:deploy-file \
+          OUTPUT=$(mvn deploy:deploy-file \
             -Dfile="${FAT_JAR}" \
             -DgroupId="${GROUP_ID}" \
             -DartifactId="${ARTIFACT_ID}" \
@@ -115,7 +115,15 @@ jobs:
             -Dpackaging=jar \
             -DrepositoryId=github \
             -Durl="https://maven.pkg.github.com/${{ github.repository }}" \
-            -B
+            -B 2>&1) || {
+            if echo "$OUTPUT" | grep -q "409"; then
+              echo "Package already exists (409) - already published, skipping"
+            else
+              echo "$OUTPUT"
+              exit 1
+            fi
+          }
+          echo "$OUTPUT"
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
