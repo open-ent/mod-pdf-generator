@@ -25,6 +25,12 @@
     </scm>
 
     <repositories>
+        <!-- Parent POM (org.openent:modules) published on GitHub Packages (open-ent-ng, private) -->
+        <repository>
+            <id>github-openent</id>
+            <name>open-ent-ng parent POMs</name>
+            <url>https://maven.pkg.github.com/open-ent/open-ent-ng</url>
+        </repository>
         <repository>
             <id>ode</id>
             <name>ODE Repository</name>
