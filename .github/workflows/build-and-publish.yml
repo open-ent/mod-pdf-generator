@@ -24,7 +24,7 @@ jobs:
           distribution: temurin
           cache: maven
       - name: Build fat JAR
-        run: mvn clean package -DskipTests -B
+        run: mvn clean package -DskipTests -B -DbuildNumber=${GITHUB_SHA::8} -DscmBranch=${GITHUB_REF_NAME}
       - name: Run tests
         if: github.event_name == 'pull_request'
         run: mvn test -B
