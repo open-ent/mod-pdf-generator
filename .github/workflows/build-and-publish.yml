@@ -58,6 +58,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
 
+      # Les artefacts entcore `-patched` sont republiés À VERSION IDENTIQUE (convention du
+
+      # fork : une branche `X.Y.Z-patched-dev`, un tag `X.Y.Z-patched` qu'on déplace). Or Maven
+
+      # tient une version release pour immuable et ne la retélécharge jamais si elle est déjà
+
+      # dans le dépôt local — le cache de `setup-java` sert alors un entcore périmé.
+
+      - name: Purger entcore du cache Maven (versions -patched republiées)
+
+        run: rm -rf ~/.m2/repository/org/entcore
+
+
       - name: Build fat JAR
         run: mvn clean package -DskipTests -B -DbuildNumber=${GITHUB_SHA::8} -DscmBranch=${GITHUB_REF_NAME}
       - name: Run tests
