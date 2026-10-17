@@ -15,7 +15,7 @@
     <properties>
         <web-utils.version>3.3.1</web-utils.version>
         <jacksonDatabindVersion>2.15.2</jacksonDatabindVersion>
-        <flyingSaucerVersion>9.0.7</flyingSaucerVersion>
+        <flyingSaucerVersion>9.13.3</flyingSaucerVersion>
     </properties>
 
     <scm>
