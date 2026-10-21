@@ -18,18 +18,23 @@ package fr.wseduc.pdfgenerator;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
+import java.net.URLConnection;
 
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
 import org.vertx.java.busmods.BusModBase;
 import org.xhtmlrenderer.pdf.ITextRenderer;
+import org.xhtmlrenderer.pdf.ITextUserAgent;
 
 public class PDFGenerator extends BusModBase implements Handler<Message<JsonObject>> {
 
-	private final ITextRenderer renderer = new ITextRenderer();
 	private String baseUrl = "";
+	private int connectTimeout;
+	private int readTimeout;
 
 	/**
 	 * Verticle start method.
@@ -41,10 +46,26 @@ public class PDFGenerator extends BusModBase implements Handler<Message<JsonObje
 		logger.info("Starting PdfGenerator - address : " + address);
 		vertx.eventBus().localConsumer(address, this);
 		baseUrl = config.getString("baseUrl", "");
+		connectTimeout = config.getInteger("connectTimeout", 5000);
+		readTimeout = config.getInteger("readTimeout", 15000);
 	}
 
+	/**
+	 * Le rendu télécharge les images du document de façon bloquante : il tourne donc sur un fil
+	 * de travail, jamais sur le fil d'événements. Sur le fil d'événements, une image servie par
+	 * ce même serveur ne pouvait pas être servie (le fil qui devait répondre était celui qui
+	 * attendait) et tout le nœud restait figé jusqu'à l'expiration de la connexion.
+	 * Les rendus restent séquentiels ({@code ordered}), comme auparavant.
+	 */
 	@Override
 	public void handle(Message<JsonObject> message) {
+		vertx.executeBlocking(promise -> {
+			render(message);
+			promise.complete();
+		}, true, null);
+	}
+
+	private void render(Message<JsonObject> message) {
 		final String encoding = message.body().getString("encoding", "UTF-8");
 		ByteArrayOutputStream binaryOutput = new ByteArrayOutputStream();
 
@@ -57,6 +78,7 @@ public class PDFGenerator extends BusModBase implements Handler<Message<JsonObje
 			}
 
 			//Actual pdf rendering
+			final ITextRenderer renderer = newRenderer();
 			renderer.setDocumentFromString(content, message.body().getString("baseUrl", baseUrl));
 			renderer.layout();
 			renderer.createPDF(binaryOutput);
@@ -73,6 +95,33 @@ public class PDFGenerator extends BusModBase implements Handler<Message<JsonObje
 				logger.error(e.getMessage(), e);
 			}
 		}
+	}
+
+	/**
+	 * Moteur de rendu dont les téléchargements d'images ont des délais : une image injoignable
+	 * est omise au lieu de bloquer le rendu (et le fil qui l'exécute) indéfiniment.
+	 */
+	private ITextRenderer newRenderer() {
+		final ITextRenderer renderer = new ITextRenderer();
+		final ITextUserAgent userAgent = new ITextUserAgent(renderer.getOutputDevice()) {
+			@Override
+			protected InputStream resolveAndOpenStream(String uri) {
+				final String resolved = resolveURI(uri);
+				try {
+					final URLConnection connection = new URL(resolved).openConnection();
+					connection.setConnectTimeout(connectTimeout);
+					connection.setReadTimeout(readTimeout);
+					return connection.getInputStream();
+				} catch (Exception e) {
+					logger.warn("PdfGenerator : cannot load resource " + resolved + " : " + e.getMessage());
+					return null;
+				}
+			}
+		};
+		userAgent.setSharedContext(renderer.getSharedContext());
+		renderer.getSharedContext().setUserAgentCallback(userAgent);
+		renderer.getSharedContext().getCss().setUserAgentCallback(userAgent);
+		return renderer;
 	}
 
 }
