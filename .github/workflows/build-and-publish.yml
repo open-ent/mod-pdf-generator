@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-java@v6
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: temurin
           cache: maven
       - name: Configure Maven pour GitHub Packages
@@ -84,7 +84,7 @@ jobs:
       - name: Run tests
         if: github.event_name == 'pull_request'
         # profil `scala` d'app-parent désactivé : maven-scala-plugin 2.15.2 ne lit pas le
-        # bytecode du JDK 21, et aucun module applicatif n'a de source Scala.
+        # bytecode des JDK récents, et aucun module applicatif n'a de source Scala.
         run: mvn test -B -P '!scala'
       - name: Configure Maven for GitHub Packages
         if: startsWith(github.ref, 'refs/tags/')
